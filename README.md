@@ -1,150 +1,218 @@
-# 🛒 E-commerce Data Engineering — Databricks Medallion Architecture  
-## Projeto End-to-End usando Olist Dataset (PySpark + Delta Lake)
+# 📘 Projeto Lakehouse E-commerce – Databricks (Bronze → Silver → Gold)
 
-Este repositório apresenta um pipeline completo de Engenharia de Dados utilizando a Arquitetura **Medallion (Bronze → Silver → Gold)** no **Databricks**, processando o dataset público **Olist**.  
-O projeto replica o fluxo real de um ambiente corporativo de dados: ingestão, processamento, qualidade, modelagem e disponibilização analítica.
+Este projeto implementa um pipeline completo de Engenharia de Dados utilizando o padrão **Medallion Architecture** (Bronze / Silver / Gold) no **Databricks Lakehouse**.  
+O objetivo é transformar dados brutos do e-commerce Olist em:
 
----
-
-## 📂 Estrutura Geral do Projeto
-.
-├── bronze/              # Dados crus do Olist em Delta
-├── silver/              # Dados tratados e integrados
-├── gold/                # Tabelas analíticas e métricas
-├── notebooks/           # Notebooks organizados por camada
-├── sql/                 # Comandos Delta (OPTIMIZE, VACUUM, MERGE)
-├── docs/                # Diagramas, dicionário, documentação
-└── README.md            # Este arquivo
-
-
-/data
-/bronze # CSVs brutos
-/silver # tabelas Delta limpas
-/gold # modelos analíticos
-
-/docs
-schema_reference.md
-data_quality.md
-
-README.md
-
-yaml
-Copiar código
+- tabelas otimizadas e limpas (Silver)  
+- um modelo dimensional (Gold)  
+- visões analíticas e KPIs  
+- dashboards e análises avançadas  
 
 ---
 
-## 🧱 Arquitetura Medallion
+## 🔥 Visão Geral da Arquitetura
 
-### 🥉 Bronze — Raw Layer
-- Recebe arquivos **CSV** diretamente do dataset Olist.  
-- Nenhuma transformação aplicada.  
-- Apenas ingestão com `inferSchema` e `header=True`.  
-- Armazenado como **Delta Lake** para permitir time travel e versionamento.
+```
+notebooks/
+│
+├── bronze/
+│   └── bronze_ingestion.ipynb
+│
+├── silver/
+│   └── silver_processing.ipynb
+│
+├── gold/
+│   └── gold_processing.ipynb
+│
+└── gold_modeling/
+    ├── dim_customers.ipynb
+    ├── dim_products.ipynb
+    ├── dim_sellers.ipynb
+    ├── dim_dates.ipynb
+    ├── fact_orders.ipynb
+    ├── fact_order_items.ipynb
+    ├── fact_payments.ipynb
+    ├── fact_reviews.ipynb
+    └── kpi_views.ipynb
+```
 
-**Objetivo:** garantir que os dados brutos sejam preservados sem alteração.
+Os dados são armazenados dentro do Databricks, no Volume Lakehouse:
 
----
+```
+/Volumes/ecommerce_cat/ecommerce_schema/bronze
+/Volumes/ecommerce_cat/ecommerce_schema/silver
+/Volumes/ecommerce_cat/ecommerce_schema/gold
+```
 
-### 🥈 Silver — Refined Layer
-- Padronização de colunas  
-- Conversão de tipos  
-- Normalização de datas  
-- Remoção de duplicatas  
-- Correção de registros inconsistentes  
-- Enriquecimento leve (ex: join cliente-endereço)
-
-**Camada já concluída no projeto.**
-
----
-
-### 🥇 Gold — Business Layer  
-Camada orientada ao negócio, pronta para BI e análises sofisticadas.
-
-Tabelas principais:
-
-#### **1. order_facts**
-- Fato de pedidos com granularidade por pedido-item  
-- Valores de receita, frete, totais e prazos
-
-#### **2. customer_dim**
-- Dimensão de clientes com histórico agregável
-
-#### **3. product_dim**
-- Dimensão de produtos, categorias traduzidas e medidas
-
-#### **4. seller_dim**
-- Dimensão de vendedores
-
-#### **5. rfm_customer_features**
-- Recency  
-- Frequency  
-- Monetary  
-Prontos para clustering ou LTV models.
+A pasta `/Volumes` **não faz parte do GitHub**, apenas o código é versionado.
 
 ---
 
-## 🚀 Tecnologias
-- **Databricks Community Edition**
-- **PySpark**
-- **Delta Lake**
-- **ETL/ELT**
-- **Business Analytics**
-- **Power BI**
+# 🟫 1) Camada Bronze – Ingestão Bruta
+
+A camada Bronze recebe os arquivos originais do dataset Olist:
+
+- customers.csv  
+- orders.csv  
+- order_items.csv  
+- products.csv  
+- sellers.csv  
+- order_payments.csv  
+- order_reviews.csv  
+- geolocation.csv  
+- product_category_translation.csv  
+
+Funções da Bronze:
+
+- leitura de CSVs  
+- aplicação dos schemas  
+- padronização inicial  
+- gravação em **Delta Lake**  
+- armazenamento seguro no Volume Bronze  
 
 ---
 
-## 📌 Fluxo do Pipeline
+# 🥈 2) Camada Silver – Tratamento e Normalização
 
-1. Upload dos CSVs no DBFS (`/ecommerce/bronze/2/…`)
-2. Leitura e armazenamento em Delta (Bronze)
-3. Limpeza, conversões e dedupe (Silver)
-4. Modelagem dimensional e tabelas fato/dimensão (Gold)
-5. Consumo no Power BI (via Databricks SQL Endpoint)
+A Silver limpa e organiza os dados:
 
----
+- remoção de duplicatas  
+- correção de tipos  
+- padronização de colunas  
+- tratamento de valores faltantes  
+- enriquecimentos simples  
+- criação de tabelas analíticas estáveis  
 
-## 🎯 Objetivos do Projeto
+Todas armazenadas em:
 
-- Demonstrar domínio real em **Data Engineering**
-- Criar um pipeline completo e reproduzível
-- Aplicar boas práticas (SCD, dedupe, padronização)
-- Criar modelos analíticos sólidos para BI
-- Mostrar senioridade em Databricks + Delta Lake
+```
+/Volumes/ecommerce_cat/ecommerce_schema/silver/<tabela>
+```
 
----
+Exemplos de tabelas Silver:
 
-## 📊 Dashboard (Power BI)
-O dashboard final inclui:
-
-- Vendas por categoria  
-- Faturamento por mês  
-- Análise de entregas (SLA, atrasos, lead time)  
-- Mapa de geolocalização  
-- Customer RFM  
-
----
-
-## 📘 Dataset
-O projeto utiliza exclusivamente o dataset **Olist Brazilian E-Commerce**, composto por:
-
-- Pedidos  
-- Clientes  
-- Itens  
-- Pagamentos  
-- Produtos  
-- Vendedores  
-- Categorias traduzidas  
-- Geolocalização
+- customers  
+- orders  
+- products  
+- sellers  
+- order_items  
+- order_payments  
+- order_reviews  
+- geolocation  
 
 ---
 
-## 📎 Próximas Etapas
-- Implementar testes de qualidade (Great Expectations)  
-- Adicionar monitoramento (Delta Live Tables)  
-- Adicionar particionamento e ZORDER  
-- Criar pipeline Airflow opcional  
+# 🥇 3) Camada Gold – Modelo Dimensional
+
+A camada Gold contém o Data Warehouse final com modelo estrela:
+
+## 📁 Dimensões criadas
+
+- **dim_customers**
+- **dim_products**
+- **dim_sellers**
+- **dim_dates**
+
+### Exemplo (Dim Customers)
+
+Selecionamos apenas as colunas importantes e removemos duplicatas:
+
+```python
+dim_customers = (
+    df.select(
+        "customer_id",
+        "customer_unique_id",
+        "customer_city",
+        "customer_state",
+        "customer_zip_code_prefix"
+    )
+    .dropDuplicates(["customer_id"])
+)
+
+dim_customers.write.format("delta").mode("overwrite").save(f"{gold}/dim_customers")
+
+spark.sql("""
+CREATE OR REPLACE VIEW ecommerce_cat.ecommerce_schema.dim_customers AS
+SELECT * FROM delta.`/Volumes/ecommerce_cat/ecommerce_schema/gold/dim_customers`
+""")
+```
+
+## 📁 Tabelas Fato
+
+- **fact_orders**
+- **fact_order_items**
+- **fact_payments**
+- **fact_reviews**
+
+Cada fato contém chaves estrangeiras + métricas (medidas numéricas).
 
 ---
+
+# 📊 4) Criação de KPIs e Visões Analíticas
+
+No arquivo `kpi_views.ipynb` foram criadas views SQL que serão consumidas por ferramentas de BI.
+
+### KPI – Receita total
+
+```sql
+CREATE OR REPLACE VIEW ecommerce_cat.ecommerce_schema.kpi_revenue AS
+SELECT SUM(price + freight_value) AS revenue
+FROM ecommerce_cat.ecommerce_schema.fact_order_items;
+```
+
+### KPI – Top 5 estados que mais compram
+
+```sql
+CREATE OR REPLACE VIEW ecommerce_cat.ecommerce_schema.kpi_top_states AS
+SELECT c.customer_state, SUM(oi.price) AS revenue
+FROM ecommerce_cat.ecommerce_schema.fact_order_items oi
+JOIN ecommerce_cat.ecommerce_schema.fact_orders o USING(order_id)
+JOIN ecommerce_cat.ecommerce_schema.dim_customers c USING(customer_id)
+GROUP BY c.customer_state
+ORDER BY revenue DESC
+LIMIT 5;
+```
+
+### KPI – Média de Avaliações
+
+```sql
+CREATE OR REPLACE VIEW ecommerce_cat.ecommerce_schema.kpi_avg_review AS
+SELECT AVG(review_score_clean) AS avg_review
+FROM ecommerce_cat.ecommerce_schema.gold_reviews;
+```
+
+---
+
+# 📈 5) Dashboards – O que é possível fazer
+
+Com o modelo dimensional pronto, é possível construir dashboards de alto nível.
+
+## 📌 Dashboard de Vendas
+
+- receita total  
+- receita por categoria  
+- receita por estado  
+- top 10 produtos  
+- quantidade de pedidos por dia  
+- ticket médio  
+- mapa geográfico  
+
+## 📌 Dashboard de Logística
+
+- tempo médio de entrega  
+- atraso por estado  
+- atraso por vendedor  
+- volume de pedidos por semana  
+
+## 📌 Dashboard de Satisfação
+
+- média geral de reviews  
+- distribuição das notas  
+- comentários positivos e negativos  
+- indicadores por categoria  
+
+---
+
 
 Contato / Autor
 
